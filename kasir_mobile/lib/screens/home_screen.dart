@@ -108,9 +108,7 @@ class _HomeScreenState extends State<HomeScreen>
         if (_noHp.isEmpty && user != null) {
           _noHp = user.noHp;
         }
-        if (_alamat.isEmpty && user != null) {
-          _alamat = user.alamat;
-        }
+
 
         _namaPelangganCtrl.text = _namaPelanggan;
         _noHpCtrl.text = _noHp;
@@ -628,7 +626,7 @@ class _HomeScreenState extends State<HomeScreen>
             ),
 
             // Alamat Pengiriman
-            if (order.kotaTujuan.isNotEmpty) ...[
+            if (order.alamat.isNotEmpty || order.kotaTujuan.isNotEmpty) ...[
               const SizedBox(height: 14),
               const Row(
                 children: [
@@ -648,7 +646,10 @@ class _HomeScreenState extends State<HomeScreen>
               Padding(
                 padding: const EdgeInsets.only(left: 22),
                 child: Text(
-                  order.kotaTujuan,
+                  [
+                    if (order.alamat.isNotEmpty) order.alamat,
+                    if (order.kotaTujuan.isNotEmpty) order.kotaTujuan,
+                  ].join('\n'),
                   style: const TextStyle(
                     fontSize: 12,
                     color: Color(0xFF475569),
@@ -1098,7 +1099,7 @@ class _HomeScreenState extends State<HomeScreen>
             ),
 
             // Alamat Pengiriman
-            if (order.kotaTujuan.isNotEmpty) ...[
+            if (order.alamat.isNotEmpty || order.kotaTujuan.isNotEmpty) ...[
               const SizedBox(height: 14),
               const Row(
                 children: [
@@ -1118,7 +1119,10 @@ class _HomeScreenState extends State<HomeScreen>
               Padding(
                 padding: const EdgeInsets.only(left: 22),
                 child: Text(
-                  order.kotaTujuan,
+                  [
+                    if (order.alamat.isNotEmpty) order.alamat,
+                    if (order.kotaTujuan.isNotEmpty) order.kotaTujuan,
+                  ].join('\n'),
                   style: const TextStyle(
                     fontSize: 12,
                     color: Color(0xFF475569),

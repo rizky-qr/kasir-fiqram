@@ -220,14 +220,14 @@ class _CheckoutScreenState extends State<CheckoutScreen>
   Future<void> _prosesCheckout() async {
     setState(() => _loadingCheckout = true);
     try {
-      final fullAlamat = '${_alamatCtrl.text.trim()}, ${_selectedKota?.displayName ?? ""}';
       await _api.simpanPenjualan(
         items:              widget.cart.map((e) => e.toJson()).toList(),
         total:              _totalBayar,
         bayar:              _totalBayar,
         metodePembayaran:   _selectedPayment,
         ongkir:             _ongkirBiaya,
-        kotaTujuan:         fullAlamat,
+        kotaTujuan:         _selectedKota?.displayName ?? "",
+        alamat:             _alamatCtrl.text.trim(),
       );
       if (!mounted) return;
       Navigator.pop(context, 'success');

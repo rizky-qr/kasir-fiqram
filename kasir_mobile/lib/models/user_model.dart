@@ -5,7 +5,6 @@ class UserModel {
   final String level;
   final String email;
   final String noHp;
-  final String alamat;
 
   UserModel({
     required this.idUser,
@@ -14,7 +13,6 @@ class UserModel {
     required this.level,
     this.email = '',
     this.noHp = '',
-    this.alamat = '',
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -31,7 +29,6 @@ class UserModel {
       level: json['level']?.toString() ?? '',
       email: json['email']?.toString() ?? '',
       noHp: json['no_hp']?.toString() ?? '',
-      alamat: json['alamat']?.toString() ?? '',
     );
   }
 
@@ -42,6 +39,5 @@ class UserModel {
         'level': level,
         'email': email,
         'no_hp': noHp,
-        'alamat': alamat,
       };
 }

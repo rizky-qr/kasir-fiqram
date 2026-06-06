@@ -42,6 +42,7 @@ class PenjualanModel {
   final String metodePembayaran;
   final int ongkir;
   final String kotaTujuan;
+  final String alamat;
   final List<PenjualanItem> items;
 
   PenjualanModel({
@@ -56,6 +57,7 @@ class PenjualanModel {
     this.metodePembayaran = 'COD',
     this.ongkir = 0,
     this.kotaTujuan = '',
+    this.alamat = '',
     this.items = const [],
   });
 
@@ -72,6 +74,7 @@ class PenjualanModel {
       metodePembayaran: json['metode_pembayaran']?.toString()   ?? 'COD',
       ongkir:           int.tryParse(json['ongkir']?.toString() ?? '0') ?? 0,
       kotaTujuan:       json['kota_tujuan']?.toString()         ?? '',
+      alamat:           json['alamat']?.toString()              ?? '',
       items: (json['items'] as List<dynamic>?)
               ?.map((e) => PenjualanItem.fromJson(e as Map<String, dynamic>))
               .toList() ?? const [],
@@ -90,6 +93,7 @@ class PenjualanModel {
       'metode_pembayaran': metodePembayaran,
       'ongkir':            ongkir,
       'kota_tujuan':       kotaTujuan,
+      'alamat':            alamat,
       'items':             items.map((e) => e.toJson()).toList(),
     };
   }

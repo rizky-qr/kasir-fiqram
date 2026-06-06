@@ -315,6 +315,7 @@ class ApiService {
     String metodePembayaran = 'COD',
     int ongkir = 0,
     String kotaTujuan = '',
+    String alamat = '',
   }) async {
     final res = await http.post(
       Uri.parse('$_activeBaseUrl/penjualan.php'),
@@ -326,6 +327,7 @@ class ApiService {
         'metode_pembayaran': metodePembayaran,
         'ongkir':            ongkir,
         'kota_tujuan':       kotaTujuan,
+        'alamat':            alamat,
       }),
     );
     return _decode(res);
@@ -407,6 +409,16 @@ class ApiService {
   }
 
   Future<Map<String, String>?> getProfilPelanggan() async {
+    String localAlamat = '';
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_profilKey);
+      if (raw != null) {
+        final m = jsonDecode(raw) as Map<String, dynamic>;
+        localAlamat = m['alamat']?.toString() ?? '';
+      }
+    } catch (_) {}
+
     try {
       final res = await http.get(
         Uri.parse('$_activeBaseUrl/profile.php'),
@@ -416,10 +428,11 @@ class ApiService {
       final body = await _decode(res);
       final data = body['data'] as Map<String, dynamic>?;
       if (data != null) {
+        final serverAlamat = data['alamat']?.toString() ?? '';
         return {
           'nama': data['nama_user']?.toString() ?? '',
           'no_hp': data['no_hp']?.toString() ?? '',
-          'alamat': data['alamat']?.toString() ?? '',
+          'alamat': serverAlamat.isNotEmpty ? serverAlamat : localAlamat,
           'email': data['email']?.toString() ?? '',
         };
       }
