@@ -15,7 +15,7 @@ if ($method === 'GET') {
             'username'  => $user['username'],
             'email'     => $user['email'] ?? '',
             'no_hp'     => $user['no_hp'] ?? '',
-            'alamat'    => $user['alamat'] ?? '',
+            'alamat'    => '',
         ]
     ]);
 } elseif ($method === 'POST') {
@@ -31,8 +31,8 @@ if ($method === 'GET') {
 
     $idUser = $user['id_user'];
 
-    $stmt = mysqli_prepare($koneksi, "UPDATE user SET nama_user = ?, email = ?, no_hp = ?, alamat = ? WHERE id_user = ?");
-    mysqli_stmt_bind_param($stmt, "ssssi", $namaUser, $email, $noHp, $alamat, $idUser);
+    $stmt = mysqli_prepare($koneksi, "UPDATE user SET nama_user = ?, email = ?, no_hp = ? WHERE id_user = ?");
+    mysqli_stmt_bind_param($stmt, "sssi", $namaUser, $email, $noHp, $idUser);
     $ok = mysqli_stmt_execute($stmt);
 
     if (!$ok) {

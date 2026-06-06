@@ -48,6 +48,6 @@ jsonResponse(true, 'Login berhasil.', [
         'level'     => $userData['level'],
         'email'     => $userData['email'] ?? '',
         'no_hp'     => $userData['no_hp'] ?? '',
-        'alamat'    => $userData['alamat'] ?? '',
+        'alamat'    => '',
     ],
 ]);

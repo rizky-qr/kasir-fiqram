@@ -14,6 +14,7 @@ if ($method === 'POST') {
     $metodeBayar     = mysqli_real_escape_string($koneksi, trim($body['metode_pembayaran'] ?? 'COD'));
     $ongkir          = (int) ($body['ongkir']     ?? 0);
     $kotaTujuan      = mysqli_real_escape_string($koneksi, trim($body['kota_tujuan']      ?? ''));
+    $alamat          = mysqli_real_escape_string($koneksi, trim($body['alamat']           ?? ''));
 
     if (empty($items)) {
         jsonResponse(false, 'Keranjang kosong. Tambahkan produk terlebih dahulu.', null, 400);
@@ -31,8 +32,8 @@ if ($method === 'POST') {
 
     try {
         $ok = mysqli_query($koneksi, "
-            INSERT INTO penjualan (tanggal, total, bayar, kembali, id_user, status, metode_pembayaran, ongkir, kota_tujuan)
-            VALUES ('$tanggal', '$total', '$bayar', '$kembali', '$idUser', 'Menunggu Verifikasi', '$metodeBayar', '$ongkir', '$kotaTujuan')
+            INSERT INTO penjualan (tanggal, total, bayar, kembali, id_user, status, metode_pembayaran, ongkir, kota_tujuan, alamat)
+            VALUES ('$tanggal', '$total', '$bayar', '$kembali', '$idUser', 'Menunggu Verifikasi', '$metodeBayar', '$ongkir', '$kotaTujuan', '$alamat')
         ");
         if (!$ok) throw new Exception('Gagal menyimpan penjualan: ' . mysqli_error($koneksi));
 
@@ -135,6 +136,7 @@ elseif ($method === 'GET') {
             'metode_pembayaran' => $row['metode_pembayaran'] ?? 'COD',
             'ongkir'            => (int) ($row['ongkir'] ?? 0),
             'kota_tujuan'       => $row['kota_tujuan'] ?? '',
+            'alamat'            => $row['alamat'] ?? '',
             'items'             => $items,
         ];
     }

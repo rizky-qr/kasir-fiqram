@@ -125,9 +125,9 @@ $resNoHp = mysqli_query($koneksi, "SHOW COLUMNS FROM user LIKE 'no_hp'");
 if (mysqli_num_rows($resNoHp) == 0) {
     mysqli_query($koneksi, "ALTER TABLE user ADD COLUMN no_hp VARCHAR(20) DEFAULT '' AFTER email");
 }
-$resAlamat = mysqli_query($koneksi, "SHOW COLUMNS FROM user LIKE 'alamat'");
+$resAlamat = mysqli_query($koneksi, "SHOW COLUMNS FROM penjualan LIKE 'alamat'");
 if (mysqli_num_rows($resAlamat) == 0) {
-    mysqli_query($koneksi, "ALTER TABLE user ADD COLUMN alamat TEXT AFTER no_hp");
+    mysqli_query($koneksi, "ALTER TABLE penjualan ADD COLUMN alamat TEXT AFTER kota_tujuan");
 }
 
 // ─── Migrasi kolom produk (berat dalam gram) ───────────────────────────────

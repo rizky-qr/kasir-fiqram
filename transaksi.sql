@@ -128,6 +128,7 @@ CREATE TABLE `penjualan` (
   `metode_pembayaran` varchar(50) COLLATE utf8mb4_general_ci DEFAULT 'COD',
   `ongkir` int DEFAULT '0',
   `kota_tujuan` varchar(100) COLLATE utf8mb4_general_ci DEFAULT '',
+  `alamat` text COLLATE utf8mb4_general_ci,
   PRIMARY KEY (`id_penjualan`),
   KEY `id_user` (`id_user`),
   CONSTRAINT `penjualan_ibfk_1` FOREIGN KEY (`id_user`) REFERENCES `user` (`id_user`)
@@ -140,7 +141,7 @@ CREATE TABLE `penjualan` (
 
 LOCK TABLES `penjualan` WRITE;
 /*!40000 ALTER TABLE `penjualan` DISABLE KEYS */;
-INSERT INTO `penjualan` VALUES (10,'2026-06-05 15:37:29',95000,95000,0,3,'Menunggu Verifikasi','COD',0,''),(11,'2026-06-06 03:00:53',80000,80000,0,3,'Terverifikasi','COD',0,''),(12,'2026-06-06 04:59:11',80000,80000,0,3,'Menunggu Verifikasi','COD',0,''),(13,'2026-06-06 05:33:29',102000,102000,0,4,'Menunggu Verifikasi','COD',22000,'Kota Surabaya, Jawa Timur'),(14,'2026-06-06 05:36:27',92000,92000,0,4,'Menunggu Verifikasi','COD',12000,'Kota Jakarta Timur, DKI Jakarta'),(15,'2026-06-06 05:40:51',102000,102000,0,4,'Menunggu Verifikasi','COD',22000,'Kota Jakarta Barat, DKI Jakarta'),(16,'2026-06-06 08:00:42',1130000,1130000,0,4,'Menunggu Verifikasi','COD',1050000,'Kec. TAMAN BALI, BANGLI, BANGLI, BALI (80614)'),(17,'2026-06-06 08:21:40',94000,94000,0,4,'Menunggu Verifikasi','QRIS',14000,'Kec. DAHA, HU\'U, DOMPU, NUSA TENGGARA BARAT (NTB) (84271)'),(18,'2026-06-06 08:26:32',94000,94000,0,4,'Menunggu Verifikasi','COD',14000,'000000000000000000, Kec. ADU, HU\'U, DOMPU, NUSA TENGGARA BARAT (NTB) (84271)'),(19,'2026-06-06 08:29:26',94000,94000,0,4,'Menunggu Verifikasi','COD',14000,'qwertyui, Kec. CEMPI JAYA, HU\'U, DOMPU, NUSA TENGGARA BARAT (NTB) (84271)'),(20,'2026-06-06 08:36:12',285000,285000,0,4,'Menunggu Verifikasi','COD',45000,'000000000000000000, Kec. MATARAM TIMUR, MATARAM, MATARAM, NUSA TENGGARA BARAT (NTB) (83121)');
+INSERT INTO `penjualan` VALUES (10,'2026-06-05 15:37:29',95000,95000,0,3,'Menunggu Verifikasi','COD',0,'',NULL),(11,'2026-06-06 03:00:53',80000,80000,0,3,'Terverifikasi','COD',0,'',NULL),(12,'2026-06-06 04:59:11',80000,80000,0,3,'Menunggu Verifikasi','COD',0,'',NULL),(13,'2026-06-06 05:33:29',102000,102000,0,4,'Menunggu Verifikasi','COD',22000,'Kota Surabaya, Jawa Timur',NULL),(14,'2026-06-06 05:36:27',92000,92000,0,4,'Menunggu Verifikasi','COD',12000,'Kota Jakarta Timur, DKI Jakarta',NULL),(15,'2026-06-06 05:40:51',102000,102000,0,4,'Menunggu Verifikasi','COD',22000,'Kota Jakarta Barat, DKI Jakarta',NULL),(16,'2026-06-06 08:00:42',1130000,1130000,0,4,'Menunggu Verifikasi','COD',1050000,'Kec. TAMAN BALI, BANGLI, BANGLI, BALI (80614)',NULL),(17,'2026-06-06 08:21:40',94000,94000,0,4,'Menunggu Verifikasi','QRIS',14000,'Kec. DAHA, HU\'U, DOMPU, NUSA TENGGARA BARAT (NTB) (84271)',NULL),(18,'2026-06-06 08:26:32',94000,94000,0,4,'Menunggu Verifikasi','COD',14000,'000000000000000000, Kec. ADU, HU\'U, DOMPU, NUSA TENGGARA BARAT (NTB) (84271)',NULL),(19,'2026-06-06 08:29:26',94000,94000,0,4,'Menunggu Verifikasi','COD',14000,'qwertyui, Kec. CEMPI JAYA, HU\'U, DOMPU, NUSA TENGGARA BARAT (NTB) (84271)',NULL),(20,'2026-06-06 08:36:12',285000,285000,0,4,'Menunggu Verifikasi','COD',45000,'000000000000000000, Kec. MATARAM TIMUR, MATARAM, MATARAM, NUSA TENGGARA BARAT (NTB) (83121)',NULL);
 /*!40000 ALTER TABLE `penjualan` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -244,7 +245,6 @@ CREATE TABLE `user` (
   `level` enum('admin','kasir','pelanggan') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `email` varchar(100) COLLATE utf8mb4_general_ci DEFAULT '',
   `no_hp` varchar(20) COLLATE utf8mb4_general_ci DEFAULT '',
-  `alamat` text COLLATE utf8mb4_general_ci,
   PRIMARY KEY (`id_user`)
 ) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -255,7 +255,7 @@ CREATE TABLE `user` (
 
 LOCK TABLES `user` WRITE;
 /*!40000 ALTER TABLE `user` DISABLE KEYS */;
-INSERT INTO `user` VALUES (1,'Administrator','admin','0192023a7bbd73250516f069df18b500','admin','','',NULL),(2,'kasir1','kasir1','de28f8f7998f23ab4194b51a6029416f','kasir','','',NULL),(3,'alfiqram','alfiq','9b55d9d616eec7ba1e77a947c2e2ca6a','pelanggan','','000000','00000000'),(4,'rizky','rizky','96ba210301f08a2eb677df096c3d48fe','pelanggan','','000000000','000000000000000000');
+INSERT INTO `user` VALUES (1,'Administrator','admin','0192023a7bbd73250516f069df18b500','admin','',''),(2,'kasir1','kasir1','de28f8f7998f23ab4194b51a6029416f','kasir','',''),(3,'alfiqram','alfiq','9b55d9d616eec7ba1e77a947c2e2ca6a','pelanggan','','000000'),(4,'rizky','rizky','96ba210301f08a2eb677df096c3d48fe','pelanggan','','000000000');
 /*!40000 ALTER TABLE `user` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
