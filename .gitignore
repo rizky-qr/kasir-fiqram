@@ -1,0 +1,30 @@
+# File besar
+*.rar
+*.zip
+*.tar.gz
+
+# Folder vendor (bisa di-install ulang pakai composer)
+vendor/
+node_modules/
+
+# File environment & sensitif
+.env
+.env.local
+.env.production
+
+# Cache & storage Laravel
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+storage/logs/*
+bootstrap/cache/*
+
+# File sistem
+.DS_Store
+Thumbs.db
+*.log
+
+# IDE
+.idea/
+.vscode/
+*.swp
