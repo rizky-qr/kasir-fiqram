@@ -241,7 +241,7 @@ Database `transaksi` saat ini terdiri dari **8 tabel aktif**:
 
 ## 👨‍💻 Developer
 
-**Fiqram** — [](https://github.com/)
+**Fiqram** — [@github](https://github.com/)
 **Rizky** — [@rizky-qr](https://github.com/rizky-qr)
 
 ---
