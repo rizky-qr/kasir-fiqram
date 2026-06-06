@@ -312,6 +312,7 @@ Database: `transaksi`
 
 ## 👨‍💻 Developer
 
+**Fiqram**
 **Rizky** — [@rizky-qr](https://github.com/rizky-qr)
 
 ---
