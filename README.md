@@ -1,126 +1,105 @@
 # 🛒 Kasir Fiqram
 
-Aplikasi kasir berbasis web dan mobile yang terintegrasi untuk manajemen transaksi, produk, stok, dan laporan penjualan.
+Aplikasi kasir (Point of Sale) modern yang mengintegrasikan backend REST API berbasis PHP dan frontend mobile berbasis Flutter untuk mengelola produk, kategori, stok, transaksi penjualan, ongkos kirim real-time, dan laporan penjualan.
 
 ---
 
 ## 📋 Daftar Isi
 
 - [Tentang Proyek](#-tentang-proyek)
-- [Fitur](#-fitur)
+- [Fitur Baru & Unggulan](#-fitur-baru--unggulan)
 - [Teknologi](#-teknologi)
 - [Struktur Proyek](#-struktur-proyek)
 - [Prasyarat](#-prasyarat)
-- [Instalasi](#-instalasi)
-  - [Aplikasi Web (aplikasi_post)](#aplikasi-web-aplikasi_post)
+- [Instalasi & Setup](#-instalasi--setup)
+  - [Backend REST API (aplikasi_post)](#backend-rest-api-aplikasi_post)
   - [Aplikasi Mobile (kasir_mobile)](#aplikasi-mobile-kasir_mobile)
 - [Konfigurasi API](#-konfigurasi-api)
-- [Penggunaan](#-penggunaan)
 - [API Endpoints](#-api-endpoints)
 - [Struktur Database](#-struktur-database)
-- [Kontribusi](#-kontribusi)
+- [Developer](#-developer)
 
 ---
 
 ## 📖 Tentang Proyek
 
-**Kasir Fiqram** adalah sistem Point of Sale (POS) yang terdiri dari:
-- **Aplikasi Web** — Backend & frontend berbasis PHP untuk manajemen kasir melalui browser
-- **Aplikasi Mobile** — Aplikasi Flutter untuk kasir di perangkat Android/iOS
-- **WebSocket Server** — Server real-time untuk fitur chat antar pengguna
+**Kasir Fiqram** saat ini menggunakan arsitektur **API-First**:
+- **Backend API (`aplikasi_post`)** — REST API yang murni menyajikan data transaksi, produk, stok, user, chat, serta proxy RajaOngkir. Semua modul UI web lama telah dihapus agar sistem terfokus dan aman.
+- **Frontend Mobile (`kasir_mobile`)** — Aplikasi Flutter premium dengan performa tinggi yang digunakan oleh semua tingkatan pengguna (Admin, Kasir, dan Pelanggan) untuk bertransaksi secara real-time.
 
 ---
 
-## ✨ Fitur
+## ✨ Fitur Baru & Unggulan
 
-### Aplikasi Web
-- 🔐 **Autentikasi** — Login & logout dengan manajemen sesi
-- 📊 **Dashboard** — Ringkasan penjualan, produk, dan stok
-- 🛍️ **Transaksi** — Proses penjualan & pembayaran
-- 📦 **Manajemen Produk** — Tambah, edit, hapus produk beserta foto
-- 🗂️ **Kategori** — Pengelompokan produk berdasarkan kategori
-- 📈 **Stok** — Monitoring dan penambahan stok produk
-- 📋 **Laporan** — Laporan penjualan dengan filter tanggal
-- 👥 **Manajemen User** — Tambah, edit, hapus pengguna
-- 💬 **Chat Real-time** — Komunikasi antar pengguna via WebSocket
+### 📱 Aplikasi Mobile (Flutter)
+- 🔐 **Autentikasi & Registrasi** — Login via REST API serta formulir registrasi pelanggan baru secara langsung di aplikasi.
+- 🚚 **RajaOngkir Komerce API v2** — Pencarian destinasi kelurahan/kecamatan domestik secara inline serta perhitungan biaya ongkos kirim real-time untuk kurir J&T, POS, dan TIKI.
+- 💳 **Metode Pembayaran Modern** — UI pemilihan metode pembayaran (COD, Bank Transfer, QRIS, GoPay, OVO) dengan ringkasan berat total belanjaan (dalam Gram/KG).
+- 👥 **Kelola Pengguna Premium** — Halaman manajemen user untuk admin dengan bilah pencarian real-time, input Email & Nomor HP, serta form pendaftaran user dalam *slide-up bottom sheet*.
+- 📋 **Kartu Transaksi Detail** — Kartu riwayat pesanan (Admin & Pelanggan) yang menampilkan detail belanjaan secara langsung tanpa perlu klik expand.
+- 💬 **Chat Real-time** — Fitur chat langsung di aplikasi antara pelanggan dan admin.
 
-### Aplikasi Mobile (Flutter)
-- 🔐 **Login** — Autentikasi via REST API
-- 🏠 **Dashboard** — Statistik penjualan harian
-- 🛒 **Transaksi** — Proses transaksi dari perangkat mobile
-- 📦 **Produk** — Melihat & mengelola produk
-- 🗂️ **Kategori** — Manajemen kategori produk
-- 📈 **Stok** — Monitoring stok
-- 📋 **Laporan** — Laporan penjualan
-- 👥 **User** — Manajemen pengguna
-- 💬 **Chat** — Fitur chat real-time
+### 🔌 Backend REST API (PHP)
+- 🛠️ **Auto-Migration Database** — `helpers.php` secara otomatis melakukan migrasi database (membuat kolom `email`, `no_hp`, `alamat` pada tabel `user`, dan kolom `berat` pada tabel `produk`) saat dijalankan pertama kali.
+- 🔒 **Keamanan Prepared Statements** — Semua proses input (registrasi, login, penambahan produk, chat, dll.) menggunakan Prepared Statements untuk mencegah celah SQL Injection.
+- 🔐 **Token Session Management** — Manajemen otentikasi berbasis token unik di database.
 
 ---
 
 ## 🛠️ Teknologi
 
-### Backend (Web)
+### Backend REST API
 | Teknologi | Versi | Keterangan |
 |-----------|-------|------------|
-| PHP | ≥ 7.4 | Backend utama |
-| MySQL | ≥ 5.7 | Database |
-| AdminLTE | 3.x | Template UI |
-| Ratchet PHP | Latest | WebSocket server |
-| Composer | 2.x | Package manager |
+| PHP | ≥ 7.4 | REST API & Core Engine |
+| MySQL | ≥ 5.7 | Database utama |
+| RajaOngkir | Komerce v2 | API ongkos kirim & destinasi |
 
-### Frontend Mobile
-| Teknologi | Versi | Keterangan |
-|-----------|-------|------------|
-| Flutter | ≥ 3.2.0 | Framework mobile |
-| Dart | ≥ 3.2.0 | Bahasa pemrograman |
-| `http` | ^1.2.0 | HTTP client |
-| `shared_preferences` | ^2.2.2 | Penyimpanan lokal |
-| `intl` | ^0.19.0 | Format tanggal & angka |
-| `image_picker` | ^1.0.7 | Upload foto produk |
+### Frontend Mobile (Flutter)
+| Library / Package | Keterangan |
+|-------------------|------------|
+| `google_fonts` | Tipografi premium (Outfit/Inter) |
+| `shimmer` | Shimmer loading skeleton |
+| `http` | HTTP Client untuk integrasi API |
+| `shared_preferences` | Manajemen session lokal |
+| `image_picker` | Unggah foto produk |
 
 ---
 
 ## 📁 Struktur Proyek
 
 ```
-kasir-fiqram/
-├── aplikasi_post/          # Aplikasi Web PHP
-│   ├── api/                # REST API endpoints
-│   │   ├── login.php
+fiqram/
+├── aplikasi_post/          # Backend REST API
+│   ├── api/                # API Endpoints & Core Helpers
+│   │   ├── chat.php
 │   │   ├── dashboard.php
-│   │   ├── produk.php
+│   │   ├── helpers.php     # Inisialisasi DB, CORS, & Auto-Migration
 │   │   ├── kategori.php
+│   │   ├── kota.php        # Proxy Destinasi Komerce
+│   │   ├── login.php
+│   │   ├── logout.php
+│   │   ├── ongkir.php      # Proxy Hitung Ongkir Komerce
 │   │   ├── penjualan.php
+│   │   ├── produk.php
+│   │   ├── profile.php     # Manajemen Profil User
+│   │   ├── register.php    # Registrasi Akun Baru
 │   │   ├── stok.php
 │   │   ├── user.php
-│   │   └── chat.php
-│   ├── pages/              # Halaman-halaman tambahan
-│   ├── plugins/            # Library JS/CSS (AdminLTE, dll)
-│   ├── img/                # Gambar statis
-│   ├── upload/             # Upload foto produk
-│   ├── websocket/          # WebSocket server (Ratchet)
-│   ├── koneksi.php         # Konfigurasi database
-│   ├── login.php           # Halaman login
-│   ├── dashboard.php       # Halaman dashboard
-│   ├── transaksi.php       # Halaman transaksi
-│   ├── produk.php          # Halaman produk
-│   ├── kategori.php        # Halaman kategori
-│   ├── stok.php            # Halaman stok
-│   ├── laporan.php         # Halaman laporan
-│   ├── user.php            # Halaman manajemen user
-│   └── transaksi.sql       # Skema database
-├── kasir_mobile/           # Aplikasi Flutter
+│   │   └── verifikasi_penjualan.php
+│   ├── img/                # Aset Gambar Statis Instansi
+│   └── upload/             # Direktori Unggah Foto Produk
+├── kasir_mobile/           # Frontend Mobile Flutter
 │   ├── lib/
 │   │   ├── config/
-│   │   │   └── api_config.dart     # Konfigurasi URL API
-│   │   ├── models/                 # Model data
-│   │   ├── screens/                # Halaman UI
+│   │   │   └── api_config.dart     # Konfigurasi URL API & API Key RajaOngkir
+│   │   ├── models/                 # Model Data (JSON Mapper)
+│   │   ├── screens/                # UI Halaman Mobile
 │   │   └── services/
-│   │       └── api_service.dart    # HTTP service
-│   ├── android/            # Konfigurasi Android
-│   ├── ios/                # Konfigurasi iOS
-│   └── pubspec.yaml        # Dependencies Flutter
-├── transaksi.sql           # Skema database utama
+│   │       └── api_service.dart    # Komunikasi REST API
+│   ├── pubspec.yaml        # Konfigurasi Dependensi Flutter
+│   └── ...
+├── transaksi.sql           # Schema Database Bersih
 └── README.md
 ```
 
@@ -128,175 +107,125 @@ kasir-fiqram/
 
 ## ⚙️ Prasyarat
 
-### Untuk Aplikasi Web
-- [Laragon](https://laragon.org/) / XAMPP / WAMP
-- PHP ≥ 7.4
-- MySQL ≥ 5.7
-- Composer
-
-### Untuk Aplikasi Mobile
-- [Flutter SDK](https://flutter.dev/) ≥ 3.2.0
-- Android Studio / VS Code
-- Android SDK (untuk build Android)
-- Xcode (untuk build iOS, hanya di macOS)
+- **Laragon / XAMPP** dengan PHP ≥ 7.4 dan MySQL menyala.
+- **Flutter SDK** ≥ 3.2.0 terinstal di sistem Anda.
 
 ---
 
-## 🚀 Instalasi
+## 🚀 Instalasi & Setup
 
-### Aplikasi Web (aplikasi_post)
+### Backend REST API (aplikasi_post)
 
-**1. Clone repository**
-```bash
-git clone https://github.com/rizky-qr/kasir-fiqram.git
-cd kasir-fiqram
-```
-
-**2. Pindahkan folder ke direktori web server**
+**1. Salin folder proyek ke direktori web server**
+Pindahkan folder `aplikasi_post/` ke dalam direktori Laragon atau XAMPP Anda:
 ```
 # Laragon
-C:/laragon/www/fiqram/
+C:/laragon/www/fiqram/aplikasi_post/
 
 # XAMPP
-C:/xampp/htdocs/fiqram/
+C:/xampp/htdocs/fiqram/aplikasi_post/
 ```
 
-**3. Import database**
-
-Buka phpMyAdmin → Buat database baru bernama `transaksi` → Import file:
+**2. Impor database**
+Buka phpMyAdmin atau HeidiSQL, buat database baru bernama `transaksi`, lalu impor file database utama di root direktori:
 ```
 transaksi.sql
 ```
-atau gunakan file SQL di dalam folder aplikasi_post:
-```
-aplikasi_post/transaksi.sql
-```
 
-**4. Konfigurasi koneksi database**
-
-Edit file `aplikasi_post/koneksi.php`:
+**3. Konfigurasi koneksi database**
+Buka file `aplikasi_post/api/helpers.php` dan sesuaikan parameter koneksi database Anda di baris berikut:
 ```php
-<?php
 $host = "localhost";
-$user = "root";       // sesuaikan username MySQL
-$pass = "";           // sesuaikan password MySQL
-$db   = "transaksi";  // nama database
-
-$koneksi = mysqli_connect($host, $user, $pass, $db);
-?>
-```
-
-**5. Install dependencies (opsional)**
-```bash
-cd aplikasi_post
-composer install
-```
-
-**6. Akses aplikasi**
-```
-http://localhost/fiqram/aplikasi_post/
+$user = "root";
+$pass = "";
+$db   = "transaksi";
 ```
 
 ---
 
 ### Aplikasi Mobile (kasir_mobile)
 
-**1. Masuk ke folder mobile**
+**1. Masuk ke direktori mobile**
 ```bash
-cd kasir-fiqram/kasir_mobile
+cd kasir_mobile
 ```
 
-**2. Install dependencies Flutter**
+**2. Instal dependensi Flutter**
 ```bash
 flutter pub get
 ```
 
-**3. Konfigurasi URL API**
-
-Edit file `lib/config/api_config.dart`:
+**3. Konfigurasi Endpoint & RajaOngkir**
+Buka file `lib/config/api_config.dart` dan sesuaikan konfigurasinya:
 ```dart
 class ApiConfig {
-  // Emulator Android
-  static String get baseUrl => 'http://10.0.2.2/fiqram/aplikasi_post/api';
+  // Base URL backend PHP
+  static String get baseUrl => 'http://localhost/fiqram/aplikasi_post/api';
 
-  // HP fisik (ganti dengan IP komputer kamu)
-  // static String get baseUrl => 'http://192.168.1.100/fiqram/aplikasi_post/api';
+  // API Key Komerce RajaOngkir
+  static const String rajaOngkirKey = '023d02b03933cc6ebfc80bd43205ec31';
+
+  // ID Kota asal default (Surabaya: 444, Dompu: 90)
+  static const String originCityId = '90';
 }
 ```
 
 **4. Jalankan aplikasi**
 ```bash
-# Cek perangkat yang tersedia
-flutter devices
-
-# Jalankan di emulator/device
 flutter run
-```
-
-**5. Build APK (opsional)**
-```bash
-flutter build apk --release
-```
-File APK tersimpan di: `build/app/outputs/flutter-apk/app-release.apk`
-
----
-
-### WebSocket Server (Real-time Chat)
-
-```bash
-cd aplikasi_post/websocket
-composer install
-php server.php
 ```
 
 ---
 
 ## 🔧 Konfigurasi API
 
-| Skenario | URL Base |
-|----------|----------|
-| Browser / localhost | `http://localhost/fiqram/aplikasi_post/api` |
+| Jenis Perangkat | Format Base URL |
+|-----------------|-----------------|
+| Browser / Web Localhost | `http://localhost/fiqram/aplikasi_post/api` |
 | Emulator Android | `http://10.0.2.2/fiqram/aplikasi_post/api` |
-| HP fisik (WiFi sama) | `http://<IP_KOMPUTER>/fiqram/aplikasi_post/api` |
-| ADB Reverse Tunnel | `http://127.0.0.1:8080/fiqram/aplikasi_post/api` |
-
-> **Catatan:** Untuk HP fisik, cari IP komputer dengan `ipconfig` (Windows) atau `ifconfig` (Linux/Mac), lalu pastikan HP dan komputer terhubung ke WiFi yang sama.
+| HP Fisik (WiFi Sama) | `http://<IP_KOMPUTER>/fiqram/aplikasi_post/api` |
 
 ---
 
 ## 📡 API Endpoints
 
-Base URL: `http://localhost/fiqram/aplikasi_post/api`
+REST API Base: `http://localhost/fiqram/aplikasi_post/api`
 
 | Method | Endpoint | Deskripsi |
 |--------|----------|-----------|
-| POST | `/login.php` | Login pengguna |
-| POST | `/logout.php` | Logout pengguna |
-| GET | `/dashboard.php` | Data statistik dashboard |
-| GET/POST/PUT/DELETE | `/produk.php` | CRUD produk |
-| GET/POST/PUT/DELETE | `/kategori.php` | CRUD kategori |
-| GET/POST | `/penjualan.php` | Data & proses penjualan |
-| GET/POST | `/stok.php` | Data & update stok |
-| GET/POST/PUT/DELETE | `/user.php` | CRUD pengguna |
-| GET/POST | `/chat.php` | Pesan chat |
+| POST | `/login.php` | Login akun & kirim token |
+| POST | `/logout.php` | Hapus token session |
+| POST | `/register.php` | Registrasi akun pelanggan baru |
+| GET/POST | `/profile.php` | Ambil / simpan perubahan profil |
+| GET | `/dashboard.php` | Statistik performa untuk admin/kasir |
+| GET/POST/DELETE | `/produk.php` | CRUD produk & upload foto |
+| GET/POST/DELETE | `/kategori.php` | CRUD kategori produk |
+| GET/POST | `/penjualan.php` | Kirim transaksi baru & riwayat order |
+| POST | `/verifikasi_penjualan.php` | Verifikasi status transaksi oleh admin |
+| GET/POST | `/stok.php` | Monitoring & update stok |
+| GET/POST/DELETE | `/user.php` | CRUD user manajemen (admin) |
+| GET/POST | `/chat.php` | Kirim & baca pesan chat realtime |
+| GET | `/kota.php` | Pencarian kota RajaOngkir Komerce |
+| GET | `/ongkir.php` | Hitung ongkos kirim Komerce |
 
 ---
 
 ## 🗄️ Struktur Database
 
-Database: `transaksi`
+Database `transaksi` saat ini terdiri dari **8 tabel aktif**:
 
 | Tabel | Deskripsi |
 |-------|-----------|
-| `users` | Data pengguna / kasir |
-| `kategori` | Kategori produk |
-| `produk` | Data produk & harga |
-| `penjualan` | Header transaksi penjualan |
-| `detail_penjualan` | Detail item per transaksi |
-| `stok` | Riwayat perubahan stok |
-| `chat` | Riwayat pesan chat |
+| `user` | Menyimpan kredensial login (admin, kasir, pelanggan), email, nomor HP, dan alamat rumah. |
+| `produk` | Daftar produk, kategori, harga, stok, foto, dan berat produk (dalam gram). |
+| `kategori` | Kategori produk. |
+| `stok` | Riwayat masuknya stok barang. |
+| `penjualan` | Header data pesanan, metode bayar, kota tujuan, ongkir, dan total transaksi. |
+| `detail_penjualan` | Detail kuantitas, harga, subtotal, dan satuan (KG/TON) tiap item pesanan. |
+| `tokens` | Token otentikasi session login pengguna. |
+| `chat` | Riwayat komunikasi pelanggan dan admin. |
 
-> Untuk skema lengkap, lihat file [`transaksi.sql`](./transaksi.sql)
+> Skema lengkap dapat diinisialisasi melalui file [`transaksi.sql`](./transaksi.sql).
 
 ---
 

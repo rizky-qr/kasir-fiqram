@@ -3,12 +3,16 @@ class UserListModel {
   final String namaUser;
   final String username;
   final String level;
+  final String email;
+  final String noHp;
 
   UserListModel({
     required this.idUser,
     required this.namaUser,
     required this.username,
     required this.level,
+    this.email = '',
+    this.noHp = '',
   });
 
   factory UserListModel.fromJson(Map<String, dynamic> json) {
@@ -23,6 +27,8 @@ class UserListModel {
       namaUser: json['nama_user']?.toString() ?? '',
       username: json['username']?.toString() ?? '',
       level: json['level']?.toString() ?? '',
+      email: json['email']?.toString() ?? '',
+      noHp: json['no_hp']?.toString() ?? '',
     );
   }
 

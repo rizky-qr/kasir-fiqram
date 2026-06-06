@@ -39,6 +39,7 @@ if ($method === 'GET') {
             'nama_kategori' => $row['nama_kategori'] ?? '',
             'harga'         => (int) $row['harga'],
             'stok'          => (int) $row['stok'],
+            'berat'         => (int) ($row['berat'] ?? 1000),
             'foto'          => $foto,
             'foto_url'      => $baseUrl . '/aplikasi_post/upload/' . $foto,
         ];
@@ -55,6 +56,7 @@ elseif ($method === 'POST') {
     $idKategori = (int) ($_POST['id_kategori'] ?? 0);
     $harga      = (int) ($_POST['harga'] ?? 0);
     $stok       = (int) ($_POST['stok'] ?? 0);
+    $berat      = (int) ($_POST['berat'] ?? 1000);
 
     if (empty($namaProduk) || $idKategori === 0 || $harga === 0) {
         jsonResponse(false, 'nama_produk, id_kategori, dan harga wajib diisi.', null, 400);
@@ -76,8 +78,8 @@ elseif ($method === 'POST') {
 
     $fotoEsc = mysqli_real_escape_string($koneksi, $foto);
     $ok = mysqli_query($koneksi, "
-        INSERT INTO produk (nama_produk, id_kategori, harga, stok, foto)
-        VALUES ('$namaProduk', '$idKategori', '$harga', '$stok', '$fotoEsc')
+        INSERT INTO produk (nama_produk, id_kategori, harga, stok, foto, berat)
+        VALUES ('$namaProduk', '$idKategori', '$harga', '$stok', '$fotoEsc', '$berat')
     ");
 
     if (!$ok) {
@@ -97,9 +99,10 @@ elseif ($method === 'PUT') {
     $idKategori = (int) ($body['id_kategori'] ?? 0);
     $harga      = (int) ($body['harga'] ?? 0);
     $stok       = (int) ($body['stok'] ?? 0);
+    $berat      = (int) ($body['berat'] ?? 1000);
 
     if ($idProduk === 0 || empty($namaProduk)) {
-        jsonResponse(false, 'id_produk dan nama_produk wajib diisi.', null, 400);
+        jsonResponse(false, 'id_produk and nama_produk wajib diisi.', null, 400);
     }
 
     $ok = mysqli_query($koneksi, "
@@ -107,7 +110,8 @@ elseif ($method === 'PUT') {
         SET nama_produk = '$namaProduk',
             id_kategori = '$idKategori',
             harga       = '$harga',
-            stok        = '$stok'
+            stok        = '$stok',
+            berat       = '$berat'
         WHERE id_produk = '$idProduk'
     ");
 

@@ -3,12 +3,18 @@ class UserModel {
   final String namaUser;
   final String username;
   final String level;
+  final String email;
+  final String noHp;
+  final String alamat;
 
   UserModel({
     required this.idUser,
     required this.namaUser,
     required this.username,
     required this.level,
+    this.email = '',
+    this.noHp = '',
+    this.alamat = '',
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -23,6 +29,19 @@ class UserModel {
       namaUser: json['nama_user']?.toString() ?? '',
       username: json['username']?.toString() ?? '',
       level: json['level']?.toString() ?? '',
+      email: json['email']?.toString() ?? '',
+      noHp: json['no_hp']?.toString() ?? '',
+      alamat: json['alamat']?.toString() ?? '',
     );
   }
+
+  Map<String, dynamic> toJson() => {
+        'id_user': idUser,
+        'nama_user': namaUser,
+        'username': username,
+        'level': level,
+        'email': email,
+        'no_hp': noHp,
+        'alamat': alamat,
+      };
 }

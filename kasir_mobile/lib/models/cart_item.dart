@@ -3,14 +3,16 @@ class CartItem {
   final String namaProduk;
   final int harga;
   int qty;
-  String satuan; // Tambahkan variabel ini
+  String satuan;
+  final int berat; // berat per KG dalam gram
 
   CartItem({
     required this.idProduk,
     required this.namaProduk,
     required this.harga,
     required this.qty,
-    this.satuan = 'KG', // Default satuan adalah KG
+    this.satuan = 'KG',
+    this.berat = 1000, // default 1 kg (1000 gram)
   });
 
   // Logika perhitungan harga otomatis
@@ -22,6 +24,14 @@ class CartItem {
     return harga * qty;
   }
 
+  // Kalkulasi berat total dalam gram
+  int get beratTotal {
+    if (satuan == 'TON') {
+      return qty * 1000 * berat;
+    }
+    return qty * berat;
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'idProduk': idProduk,
@@ -30,6 +40,7 @@ class CartItem {
       'qty': qty,
       'satuan': satuan,
       'subtotal': subtotal,
+      'berat': berat,
     };
   }
 }

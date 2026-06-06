@@ -7,7 +7,7 @@ $method = $_SERVER['REQUEST_METHOD'];
 if ($method === 'GET') {
     requireAuth($koneksi);
 
-    $query = mysqli_query($koneksi, "SELECT id_user, nama_user, username, level FROM user ORDER BY id_user DESC");
+    $query = mysqli_query($koneksi, "SELECT id_user, nama_user, username, email, no_hp, level FROM user ORDER BY id_user DESC");
     
     // Cek apakah query berhasil dieksekusi
     if (!$query) {
@@ -20,6 +20,8 @@ if ($method === 'GET') {
             'id_user'   => (int) $row['id_user'],
             'nama_user' => $row['nama_user'],
             'username'  => $row['username'],
+            'email'     => $row['email'] ?? '',
+            'no_hp'     => $row['no_hp'] ?? '',
             'level'     => $row['level'],
         ];
     }
@@ -35,6 +37,8 @@ elseif ($method === 'POST') {
     // Tidak perlu lagi mysqli_real_escape_string karena kita akan pakai Prepared Statement
     $namaUser = trim($body['nama_user'] ?? '');
     $username = trim($body['username'] ?? '');
+    $email    = trim($body['email'] ?? '');
+    $noHp     = trim($body['no_hp'] ?? '');
     $password = trim($body['password'] ?? '');
     $level    = trim($body['level'] ?? '');
 
@@ -63,8 +67,8 @@ elseif ($method === 'POST') {
     $hashedPw = md5($password);
     
     // 2. Insert data menggunakan Prepared Statement (Sangat aman dari SQL Injection)
-    $stmtInsert = mysqli_prepare($koneksi, "INSERT INTO user (nama_user, username, password, level) VALUES (?, ?, ?, ?)");
-    mysqli_stmt_bind_param($stmtInsert, "ssss", $namaUser, $username, $hashedPw, $level);
+    $stmtInsert = mysqli_prepare($koneksi, "INSERT INTO user (nama_user, email, no_hp, username, password, level) VALUES (?, ?, ?, ?, ?, ?)");
+    mysqli_stmt_bind_param($stmtInsert, "ssssss", $namaUser, $email, $noHp, $username, $hashedPw, $level);
     $ok = mysqli_stmt_execute($stmtInsert);
 
     if (!$ok) {

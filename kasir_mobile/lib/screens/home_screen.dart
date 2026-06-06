@@ -7,6 +7,7 @@ import '../models/penjualan_model.dart';
 import '../models/produk_model.dart';
 import '../models/user_model.dart';
 import '../services/api_service.dart';
+import 'checkout_screen.dart';
 import 'kategori_screen.dart';
 import 'kelola_penjualan_screen.dart';
 import 'laporan_screen.dart';
@@ -43,7 +44,6 @@ class _HomeScreenState extends State<HomeScreen>
   String _alamat = '';
   final _namaPelangganCtrl = TextEditingController();
   final _noHpCtrl = TextEditingController();
-  final _alamatCtrl = TextEditingController();
 
   // Tab controller untuk ADMIN
   late TabController _adminTabCtrl;
@@ -72,7 +72,6 @@ class _HomeScreenState extends State<HomeScreen>
     _adminTabCtrl.dispose();
     _namaPelangganCtrl.dispose();
     _noHpCtrl.dispose();
-    _alamatCtrl.dispose();
     super.dispose();
   }
 
@@ -100,10 +99,21 @@ class _HomeScreenState extends State<HomeScreen>
           _namaPelanggan = profil['nama'] ?? '';
           _noHp = profil['no_hp'] ?? '';
           _alamat = profil['alamat'] ?? '';
-          _namaPelangganCtrl.text = _namaPelanggan;
-          _noHpCtrl.text = _noHp;
-          _alamatCtrl.text = _alamat;
         }
+
+        // Jika data profil kosong, coba gunakan data dari user login (database)
+        if (_namaPelanggan.isEmpty && user != null) {
+          _namaPelanggan = user.namaUser;
+        }
+        if (_noHp.isEmpty && user != null) {
+          _noHp = user.noHp;
+        }
+        if (_alamat.isEmpty && user != null) {
+          _alamat = user.alamat;
+        }
+
+        _namaPelangganCtrl.text = _namaPelanggan;
+        _noHpCtrl.text = _noHp;
       }
 
       if (!mounted) return;
@@ -158,39 +168,40 @@ class _HomeScreenState extends State<HomeScreen>
           harga: p.harga,
           qty: 1,
           satuan: 'KG',
+          berat: p.berat,
         ));
       });
       _showSnack('${p.namaProduk} ditambahkan ke keranjang ✓', ok: true);
     }
   }
 
+  // ─── CHECKOUT: ke CheckoutScreen (ongkir + payment UI) ────────────────
   Future<void> _prosesCheckout(int totalTagihan) async {
-    if (_alamat.isEmpty || _noHp.isEmpty) {
+    if (_noHp.isEmpty) {
       _showSnack(
-          'Mohon lengkapi alamat & nomor HP di menu Profil terlebih dahulu.',
+          'Mohon lengkapi nomor HP di menu Profil terlebih dahulu.',
           isWarning: true);
       setState(() => _selectedIndex = 3);
       return;
     }
-    setState(() => _loading = true);
-    try {
-      await _api.simpanPenjualan(
-        items: _customerCart.map((e) => e.toJson()).toList(),
-        total: totalTagihan,
-        bayar: totalTagihan,
-      );
-      if (!mounted) return;
+    final result = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CheckoutScreen(
+          cart:      List.from(_customerCart),
+          namaUser:  _user?.namaUser ?? _namaPelanggan,
+          alamat:    _alamat,
+          noHp:      _noHp,
+        ),
+      ),
+    );
+    if (result == 'success' && mounted) {
       setState(() {
         _customerCart.clear();
         _selectedIndex = 1;
       });
-      _showSnack('Pesanan berhasil dibuat! Menunggu verifikasi admin.',
-          ok: true);
+      _showSnack('Pesanan berhasil dibuat! Menunggu verifikasi admin.', ok: true);
       await _load();
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _loading = false);
-      _showSnack(e.toString().replaceFirst('Exception: ', ''), isError: true);
     }
   }
 
@@ -456,18 +467,24 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Widget _buildAdminOrderCard(PenjualanModel order) {
+    final totalQty = order.items.fold<int>(0, (sum, item) => sum + item.qty);
+    final isVerif = order.status.trim().toLowerCase() == 'terverifikasi' ||
+        order.status.trim().toLowerCase() == 'selesai';
+    final statusColor = isVerif ? Colors.green : Colors.orange;
+
     return Card(
       elevation: 2,
-      margin: const EdgeInsets.only(bottom: 14),
+      margin: const EdgeInsets.only(bottom: 16),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.orange.withValues(alpha: 0.3)),
+        borderRadius: BorderRadius.circular(18),
+        side: BorderSide(color: statusColor.withValues(alpha: 0.3), width: 1.5),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Header Row
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -486,47 +503,256 @@ class _HomeScreenState extends State<HomeScreen>
                               fontSize: 13)),
                     ),
                     const SizedBox(width: 8),
-                    Text(order.namaUser,
-                        style: TextStyle(
-                            fontSize: 12, color: Colors.grey.shade600)),
+                    Text(
+                      order.namaUser,
+                      style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87),
+                    ),
                   ],
                 ),
                 Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Colors.orange.withValues(alpha: 0.1),
+                    color: statusColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                        color: Colors.orange.withValues(alpha: 0.5)),
+                        color: statusColor.withValues(alpha: 0.5)),
                   ),
-                  child: const Text('Pending',
-                      style: TextStyle(
-                          color: Colors.orange,
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold)),
+                  child: Text(
+                    isVerif ? 'Terverifikasi' : 'Pending',
+                    style: TextStyle(
+                        color: statusColor,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold),
+                  ),
                 ),
               ],
             ),
-            const Padding(
-                padding: EdgeInsets.symmetric(vertical: 12),
-                child: Divider(height: 1)),
+            const SizedBox(height: 10),
+            
+            // Tanggal & Jumlah Barang
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(order.tanggal,
+                Row(
+                  children: [
+                    Icon(Icons.access_time_rounded, size: 14, color: Colors.grey.shade500),
+                    const SizedBox(width: 4),
+                    Text(
+                      order.tanggal,
+                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                    ),
+                  ],
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    '$totalQty Barang',
                     style: TextStyle(
-                        fontSize: 12, color: Colors.grey.shade600)),
-                Text(
-                  _currency.format(order.total),
-                  style: const TextStyle(
-                      fontWeight: FontWeight.w900,
-                      fontSize: 20,
-                      color: Colors.deepOrange),
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey.shade700,
+                    ),
+                  ),
                 ),
               ],
             ),
+            const Divider(height: 24, thickness: 1),
+
+            // Detail Barang
+            const Row(
+              children: [
+                Icon(Icons.shopping_bag_outlined, size: 16, color: Colors.black54),
+                SizedBox(width: 6),
+                Text(
+                  'Detail Barang',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (order.items.isEmpty)
+                    const Text(
+                      'Tidak ada item barang',
+                      style: TextStyle(fontSize: 12, color: Colors.black54),
+                    ),
+                  ...order.items.map((item) => Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                '${item.namaProduk} x${item.qty}',
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  color: Color(0xFF334155),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                            Text(
+                              _currency.format(item.subtotal),
+                              style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF1E293B)),
+                            ),
+                          ],
+                        ),
+                      )),
+                ],
+              ),
+            ),
+
+            // Alamat Pengiriman
+            if (order.kotaTujuan.isNotEmpty) ...[
+              const SizedBox(height: 14),
+              const Row(
+                children: [
+                  Icon(Icons.location_on_outlined, size: 16, color: Colors.black54),
+                  SizedBox(width: 6),
+                  Text(
+                    'Alamat Tujuan',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Padding(
+                padding: const EdgeInsets.only(left: 22),
+                child: Text(
+                  order.kotaTujuan,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF475569),
+                    height: 1.3,
+                  ),
+                ),
+              ),
+            ],
+
+            // Detail Pembayaran
             const SizedBox(height: 14),
+            const Row(
+              children: [
+                Icon(Icons.payment_outlined, size: 16, color: Colors.black54),
+                SizedBox(width: 6),
+                Text(
+                  'Detail Pembayaran',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Metode Pembayaran',
+                        style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                      ),
+                      Text(
+                        order.metodePembayaran,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF334155),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (order.ongkir > 0) ...[
+                    const SizedBox(height: 6),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Ongkos Kirim',
+                          style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                        ),
+                        Text(
+                          _currency.format(order.ongkir),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF334155),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8),
+                    child: Divider(height: 1, color: Color(0xFFCBD5E1)),
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Total Pembayaran',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF1E293B),
+                        ),
+                      ),
+                      Text(
+                        _currency.format(order.total),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.indigo.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            
+            // Actions
             Row(
               children: [
                 Expanded(
@@ -536,6 +762,7 @@ class _HomeScreenState extends State<HomeScreen>
                       side: BorderSide(color: Colors.indigo.shade300),
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10)),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
                     onPressed: () {
                       Navigator.push(
@@ -560,6 +787,7 @@ class _HomeScreenState extends State<HomeScreen>
                       backgroundColor: Colors.green,
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10)),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
                     onPressed: () =>
                         _verifikasiPesanan(order.idPenjualan),
@@ -728,22 +956,24 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Widget _buildOrderCard(PenjualanModel order) {
+    final totalQty = order.items.fold<int>(0, (sum, item) => sum + item.qty);
     final isVerif = order.status.trim().toLowerCase() == 'terverifikasi' ||
         order.status.trim().toLowerCase() == 'selesai';
     final statusColor = isVerif ? Colors.green : Colors.orange;
 
     return Card(
       elevation: 2,
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 16),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-        side: BorderSide(color: statusColor.withValues(alpha: 0.25)),
+        borderRadius: BorderRadius.circular(18),
+        side: BorderSide(color: statusColor.withValues(alpha: 0.3), width: 1.5),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Header Row
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -761,39 +991,238 @@ class _HomeScreenState extends State<HomeScreen>
                     border: Border.all(
                         color: statusColor.withValues(alpha: 0.5)),
                   ),
-                  child: Text(order.status.trim(),
-                      style: TextStyle(
-                          color: statusColor,
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold)),
+                  child: Text(
+                    order.status.trim(),
+                    style: TextStyle(
+                        color: statusColor,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold),
+                  ),
                 ),
               ],
             ),
-            const Divider(height: 20),
+            const SizedBox(height: 10),
+
+            // Tanggal & Jumlah Barang
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                Row(
                   children: [
-                    Text('Total Pembayaran',
-                        style: TextStyle(
-                            fontSize: 11, color: Colors.grey.shade500)),
+                    Icon(Icons.access_time_rounded, size: 14, color: Colors.grey.shade500),
+                    const SizedBox(width: 4),
                     Text(
-                      _currency.format(order.total),
-                      style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.deepOrange),
+                      order.tanggal,
+                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                     ),
                   ],
                 ),
-                Text(order.tanggal,
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    '$totalQty Barang',
                     style: TextStyle(
-                        fontSize: 11, color: Colors.grey.shade500)),
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey.shade700,
+                    ),
+                  ),
+                ),
               ],
             ),
-            const SizedBox(height: 12),
+            const Divider(height: 24, thickness: 1),
+
+            // Detail Barang
+            const Row(
+              children: [
+                Icon(Icons.shopping_bag_outlined, size: 16, color: Colors.black54),
+                SizedBox(width: 6),
+                Text(
+                  'Detail Barang',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (order.items.isEmpty)
+                    const Text(
+                      'Tidak ada item barang',
+                      style: TextStyle(fontSize: 12, color: Colors.black54),
+                    ),
+                  ...order.items.map((item) => Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                '${item.namaProduk} x${item.qty}',
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  color: Color(0xFF334155),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                            Text(
+                              _currency.format(item.subtotal),
+                              style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF1E293B)),
+                            ),
+                          ],
+                        ),
+                      )),
+                ],
+              ),
+            ),
+
+            // Alamat Pengiriman
+            if (order.kotaTujuan.isNotEmpty) ...[
+              const SizedBox(height: 14),
+              const Row(
+                children: [
+                  Icon(Icons.location_on_outlined, size: 16, color: Colors.black54),
+                  SizedBox(width: 6),
+                  Text(
+                    'Alamat Tujuan',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Padding(
+                padding: const EdgeInsets.only(left: 22),
+                child: Text(
+                  order.kotaTujuan,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF475569),
+                    height: 1.3,
+                  ),
+                ),
+              ),
+            ],
+
+            // Detail Pembayaran
+            const SizedBox(height: 14),
+            const Row(
+              children: [
+                Icon(Icons.payment_outlined, size: 16, color: Colors.black54),
+                SizedBox(width: 6),
+                Text(
+                  'Detail Pembayaran',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Metode Pembayaran',
+                        style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                      ),
+                      Text(
+                        order.metodePembayaran,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF334155),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (order.ongkir > 0) ...[
+                    const SizedBox(height: 6),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Ongkos Kirim',
+                          style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                        ),
+                        Text(
+                          _currency.format(order.ongkir),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF334155),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8),
+                    child: Divider(height: 1, color: Color(0xFFCBD5E1)),
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Total Pembayaran',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF1E293B),
+                        ),
+                      ),
+                      Text(
+                        _currency.format(order.total),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.deepOrange.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Actions
             SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(
@@ -802,6 +1231,7 @@ class _HomeScreenState extends State<HomeScreen>
                   side: BorderSide(color: Colors.deepOrange.shade300),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10)),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
                 onPressed: () {
                   Navigator.push(
@@ -981,7 +1411,7 @@ class _HomeScreenState extends State<HomeScreen>
             ),
           ),
           const SizedBox(height: 32),
-          const Text('Data Pengiriman',
+          const Text('Data Profil Pelanggan',
               style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -1014,22 +1444,6 @@ class _HomeScreenState extends State<HomeScreen>
               fillColor: Colors.grey.shade50,
             ),
           ),
-          const SizedBox(height: 14),
-          TextField(
-            controller: _alamatCtrl,
-            maxLines: 3,
-            decoration: InputDecoration(
-              labelText: 'Alamat Lengkap Pengiriman',
-              prefixIcon: const Padding(
-                padding: EdgeInsets.only(bottom: 40),
-                child: Icon(Icons.location_on_outlined),
-              ),
-              border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12)),
-              filled: true,
-              fillColor: Colors.grey.shade50,
-            ),
-          ),
           const SizedBox(height: 24),
           SizedBox(
             width: double.infinity,
@@ -1042,21 +1456,20 @@ class _HomeScreenState extends State<HomeScreen>
               ),
               onPressed: () async {
                 if (_namaPelangganCtrl.text.trim().isEmpty ||
-                    _noHpCtrl.text.trim().isEmpty ||
-                    _alamatCtrl.text.trim().isEmpty) {
-                  _showSnack('Semua data harus diisi!', isWarning: true);
+                    _noHpCtrl.text.trim().isEmpty) {
+                  _showSnack('Nama dan Nomor HP harus diisi!', isWarning: true);
                   return;
                 }
                 try {
                   await _api.simpanProfilPelanggan(
                     nama: _namaPelangganCtrl.text.trim(),
                     noHp: _noHpCtrl.text.trim(),
-                    alamat: _alamatCtrl.text.trim(),
+                    alamat: '',
                   );
                   setState(() {
                     _namaPelanggan = _namaPelangganCtrl.text.trim();
                     _noHp = _noHpCtrl.text.trim();
-                    _alamat = _alamatCtrl.text.trim();
+                    _alamat = '';
                   });
                   if (!mounted) return;
                   _showSnack('Profil berhasil disimpan! ✓', ok: true);

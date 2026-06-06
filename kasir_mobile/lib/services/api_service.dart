@@ -8,6 +8,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../config/api_config.dart';
 import '../models/dashboard_model.dart';
 import '../models/kategori_model.dart';
+import '../models/kota_model.dart';
+import '../models/ongkir_model.dart';
 import '../models/penjualan_model.dart';
 import '../models/produk_model.dart';
 import '../models/stok_model.dart';
@@ -38,14 +40,7 @@ class ApiService {
   Future<void> _saveSession(String token, UserModel user) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_tokenKey, token);
-    await prefs.setString(
-        _userKey,
-        jsonEncode({
-          'id_user': user.idUser,
-          'nama_user': user.namaUser,
-          'username': user.username,
-          'level': user.level,
-        }));
+    await prefs.setString(_userKey, jsonEncode(user.toJson()));
   }
 
   Future<void> clearSession() async {
@@ -287,6 +282,8 @@ class ApiService {
     required String username,
     required String password,
     required String level,
+    String email = '',
+    String noHp = '',
   }) async {
     final res = await http.post(
       Uri.parse('$_activeBaseUrl/user.php'),
@@ -296,6 +293,8 @@ class ApiService {
         'username': username,
         'password': password,
         'level': level,
+        'email': email,
+        'no_hp': noHp,
       }),
     );
     await _decode(res);
@@ -313,11 +312,21 @@ class ApiService {
     required List<Map<String, dynamic>> items,
     required int total,
     required int bayar,
+    String metodePembayaran = 'COD',
+    int ongkir = 0,
+    String kotaTujuan = '',
   }) async {
     final res = await http.post(
       Uri.parse('$_activeBaseUrl/penjualan.php'),
       headers: await _headers(),
-      body: jsonEncode({'items': items, 'total': total, 'bayar': bayar}),
+      body: jsonEncode({
+        'items':             items,
+        'total':             total,
+        'bayar':             bayar,
+        'metode_pembayaran': metodePembayaran,
+        'ongkir':            ongkir,
+        'kota_tujuan':       kotaTujuan,
+      }),
     );
     return _decode(res);
   }
@@ -366,7 +375,7 @@ class ApiService {
     await _decode(res);
   }
 
-  // ─── Profil Pelanggan (disimpan lokal di SharedPreferences) ────────────────
+  // ─── Profil Pelanggan (disimpan di Database + Lokal) ────────────────────────
   static const _profilKey = 'profil_pelanggan';
 
   Future<void> simpanProfilPelanggan({
@@ -374,6 +383,19 @@ class ApiService {
     required String noHp,
     required String alamat,
   }) async {
+    // 1. Simpan ke Database
+    final res = await http.post(
+      Uri.parse('$_activeBaseUrl/profile.php'),
+      headers: await _headers(),
+      body: jsonEncode({
+        'nama_user': nama,
+        'no_hp': noHp,
+        'alamat': alamat,
+      }),
+    ).timeout(const Duration(seconds: 10));
+    await _decode(res);
+
+    // 2. Simpan cadangan lokal
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(
         _profilKey,
@@ -385,6 +407,26 @@ class ApiService {
   }
 
   Future<Map<String, String>?> getProfilPelanggan() async {
+    try {
+      final res = await http.get(
+        Uri.parse('$_activeBaseUrl/profile.php'),
+        headers: await _headers(),
+      ).timeout(const Duration(seconds: 10));
+      
+      final body = await _decode(res);
+      final data = body['data'] as Map<String, dynamic>?;
+      if (data != null) {
+        return {
+          'nama': data['nama_user']?.toString() ?? '',
+          'no_hp': data['no_hp']?.toString() ?? '',
+          'alamat': data['alamat']?.toString() ?? '',
+          'email': data['email']?.toString() ?? '',
+        };
+      }
+    } catch (_) {
+      // Offline / error: fallback ke lokal
+    }
+
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_profilKey);
     if (raw == null) return null;
@@ -424,5 +466,75 @@ class ApiService {
       }),
     );
     await _decode(res);
+  }
+
+  // ─── Registrasi Pelanggan Baru ───────────────────────────────────────────────
+  Future<void> register({
+    required String namaUser,
+    required String username,
+    required String password,
+    String email = '',
+    String noHp = '',
+  }) async {
+    try {
+      final res = await http.post(
+        Uri.parse('$_activeBaseUrl/register.php'),
+        headers: await _headers(auth: false),
+        body: jsonEncode({
+          'nama_user': namaUser,
+          'username':  username,
+          'password':  password,
+          'email':     email,
+          'no_hp':     noHp,
+        }),
+      ).timeout(const Duration(seconds: 10));
+      await _decode(res);
+    } on TimeoutException catch (_) {
+      throw Exception('Koneksi timeout. Pastikan server Laragon menyala.');
+    } on SocketException catch (_) {
+      throw Exception('Tidak dapat terhubung ke server. Periksa jaringan Anda.');
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // ─── RajaOngkir: Daftar Kota ────────────────────────────────────────────────
+  Future<List<KotaModel>> fetchKota({String search = ''}) async {
+    final query = <String, String>{
+      if (search.isNotEmpty) 'search': search,
+    };
+    final uri = Uri.parse('$_activeBaseUrl/kota.php')
+        .replace(queryParameters: query.isEmpty ? null : query);
+    final res = await http.get(uri, headers: await _headers())
+        .timeout(const Duration(seconds: 10));
+    final body = await _decode(res);
+    final list = (body['data'] as List<dynamic>?) ?? [];
+    return list
+        .map((e) => KotaModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  // ─── RajaOngkir: Hitung Ongkir ──────────────────────────────────────────────
+  Future<List<OngkirResult>> fetchOngkir({
+    required String destination,
+    required int weightGram,
+    required String courier,
+    String? origin,
+  }) async {
+    final uri = Uri.parse('$_activeBaseUrl/ongkir.php').replace(
+      queryParameters: {
+        'origin':      origin ?? ApiConfig.originCityId,
+        'destination': destination,
+        'weight':      weightGram.toString(),
+        'courier':     courier,
+      },
+    );
+    final res = await http.get(uri, headers: await _headers())
+        .timeout(const Duration(seconds: 15));
+    final body = await _decode(res);
+    final list = (body['data'] as List<dynamic>?) ?? [];
+    return list
+        .map((e) => OngkirResult.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 }

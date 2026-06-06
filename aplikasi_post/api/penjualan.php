@@ -5,12 +5,15 @@ $method = $_SERVER['REQUEST_METHOD'];
 
 // ─── POST: Simpan transaksi penjualan (JSON body) ────────────────────────────
 if ($method === 'POST') {
-    $authUser = requireAuth($koneksi);
-    $body     = getJsonBody();
+    $authUser        = requireAuth($koneksi);
+    $body            = getJsonBody();
 
-    $items  = $body['items'] ?? [];
-    $total  = (int) ($body['total'] ?? 0);
-    $bayar  = (int) ($body['bayar'] ?? 0);
+    $items           = $body['items']             ?? [];
+    $total           = (int) ($body['total']      ?? 0);
+    $bayar           = (int) ($body['bayar']      ?? 0);
+    $metodeBayar     = mysqli_real_escape_string($koneksi, trim($body['metode_pembayaran'] ?? 'COD'));
+    $ongkir          = (int) ($body['ongkir']     ?? 0);
+    $kotaTujuan      = mysqli_real_escape_string($koneksi, trim($body['kota_tujuan']      ?? ''));
 
     if (empty($items)) {
         jsonResponse(false, 'Keranjang kosong. Tambahkan produk terlebih dahulu.', null, 400);
@@ -27,31 +30,28 @@ if ($method === 'POST') {
     mysqli_begin_transaction($koneksi);
 
     try {
-        // PERBAIKAN: Memasukkan kolom 'status' secara eksplisit saat pertama kali pesanan dibuat
         $ok = mysqli_query($koneksi, "
-            INSERT INTO penjualan (tanggal, total, bayar, kembali, id_user, status)
-            VALUES ('$tanggal', '$total', '$bayar', '$kembali', '$idUser', 'Menunggu Verifikasi')
+            INSERT INTO penjualan (tanggal, total, bayar, kembali, id_user, status, metode_pembayaran, ongkir, kota_tujuan)
+            VALUES ('$tanggal', '$total', '$bayar', '$kembali', '$idUser', 'Menunggu Verifikasi', '$metodeBayar', '$ongkir', '$kotaTujuan')
         ");
         if (!$ok) throw new Exception('Gagal menyimpan penjualan: ' . mysqli_error($koneksi));
 
         $idPenjualan = mysqli_insert_id($koneksi);
 
         foreach ($items as $item) {
-            $idProduk = (int) ($item['id_produk'] ?? 0);
+            $idProduk = (int) ($item['id_produk'] ?? $item['idProduk'] ?? 0);
             $qty      = (int) ($item['qty'] ?? 0);
             $harga    = (int) ($item['harga'] ?? 0);
             $subtotal = (int) ($item['subtotal'] ?? ($harga * $qty));
 
             if ($idProduk === 0 || $qty <= 0) continue;
 
-            // Insert detail penjualan
             $ok = mysqli_query($koneksi, "
                 INSERT INTO detail_penjualan (id_penjualan, id_produk, qty, harga, subtotal)
                 VALUES ('$idPenjualan', '$idProduk', '$qty', '$harga', '$subtotal')
             ");
             if (!$ok) throw new Exception('Gagal menyimpan detail: ' . mysqli_error($koneksi));
 
-            // Kurangi stok produk
             $ok = mysqli_query($koneksi, "
                 UPDATE produk SET stok = stok - $qty
                 WHERE id_produk = '$idProduk' AND stok >= $qty
@@ -64,8 +64,10 @@ if ($method === 'POST') {
         mysqli_commit($koneksi);
 
         jsonResponse(true, 'Transaksi berhasil disimpan.', [
-            'id_penjualan' => $idPenjualan,
-            'kembali'      => $kembali,
+            'id_penjualan'      => $idPenjualan,
+            'kembali'           => $kembali,
+            'metode_pembayaran' => $metodeBayar,
+            'ongkir'            => $ongkir,
         ]);
 
     } catch (Exception $e) {
@@ -98,15 +100,42 @@ elseif ($method === 'GET') {
 
     $list = [];
     while ($row = mysqli_fetch_assoc($query)) {
+        $idPenjualan = (int) $row['id_penjualan'];
+        
+        // Ambil item detail untuk transaksi ini
+        $queryItems = mysqli_query($koneksi, "
+            SELECT dp.*, pr.nama_produk
+            FROM detail_penjualan dp
+            JOIN produk pr ON dp.id_produk = pr.id_produk
+            WHERE dp.id_penjualan = $idPenjualan
+        ");
+        
+        $items = [];
+        if ($queryItems) {
+            while ($itemRow = mysqli_fetch_assoc($queryItems)) {
+                $items[] = [
+                    'id_produk'   => (int) $itemRow['id_produk'],
+                    'nama_produk' => $itemRow['nama_produk'],
+                    'qty'         => (int) $itemRow['qty'],
+                    'harga'       => (int) $itemRow['harga'],
+                    'subtotal'    => (int) $itemRow['subtotal'],
+                ];
+            }
+        }
+
         $list[] = [
-            'id_penjualan' => (int) $row['id_penjualan'],
-            'tanggal'      => $row['tanggal'],
-            'total'        => (int) $row['total'],
-            'bayar'        => (int) $row['bayar'],
-            'kembali'      => (int) $row['kembali'],
-            'id_user'      => (int) $row['id_user'],
-            'nama_user'    => $row['nama_user'],
-            'status'       => $row['status'] ?? 'Menunggu Verifikasi',
+            'id_penjualan'      => $idPenjualan,
+            'tanggal'           => $row['tanggal'],
+            'total'             => (int) $row['total'],
+            'bayar'             => (int) $row['bayar'],
+            'kembali'           => (int) $row['kembali'],
+            'id_user'           => (int) $row['id_user'],
+            'nama_user'         => $row['nama_user'],
+            'status'            => $row['status'] ?? 'Menunggu Verifikasi',
+            'metode_pembayaran' => $row['metode_pembayaran'] ?? 'COD',
+            'ongkir'            => (int) ($row['ongkir'] ?? 0),
+            'kota_tujuan'       => $row['kota_tujuan'] ?? '',
+            'items'             => $items,
         ];
     }
 

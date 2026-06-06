@@ -116,6 +116,26 @@ mysqli_query($koneksi, "
     )
 ");
 
+// ─── Migrasi kolom user (email, no_hp, alamat) ──────────────────────────────
+$resEmail = mysqli_query($koneksi, "SHOW COLUMNS FROM user LIKE 'email'");
+if (mysqli_num_rows($resEmail) == 0) {
+    mysqli_query($koneksi, "ALTER TABLE user ADD COLUMN email VARCHAR(100) DEFAULT '' AFTER nama_user");
+}
+$resNoHp = mysqli_query($koneksi, "SHOW COLUMNS FROM user LIKE 'no_hp'");
+if (mysqli_num_rows($resNoHp) == 0) {
+    mysqli_query($koneksi, "ALTER TABLE user ADD COLUMN no_hp VARCHAR(20) DEFAULT '' AFTER email");
+}
+$resAlamat = mysqli_query($koneksi, "SHOW COLUMNS FROM user LIKE 'alamat'");
+if (mysqli_num_rows($resAlamat) == 0) {
+    mysqli_query($koneksi, "ALTER TABLE user ADD COLUMN alamat TEXT AFTER no_hp");
+}
+
+// ─── Migrasi kolom produk (berat dalam gram) ───────────────────────────────
+$resBerat = mysqli_query($koneksi, "SHOW COLUMNS FROM produk LIKE 'berat'");
+if (mysqli_num_rows($resBerat) == 0) {
+    mysqli_query($koneksi, "ALTER TABLE produk ADD COLUMN berat INT DEFAULT 1000 AFTER stok");
+}
+
 // ─── Buat folder upload jika belum ada ──────────────────────────────────────
 $uploadDir = __DIR__ . '/../upload/';
 if (!is_dir($uploadDir)) {

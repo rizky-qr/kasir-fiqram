@@ -7,6 +7,7 @@ class ProdukModel {
   final int stok;
   final String foto;
   final String fotoUrl;
+  final int berat; // Berat dalam gram
 
   ProdukModel({
     required this.idProduk,
@@ -17,6 +18,7 @@ class ProdukModel {
     required this.stok,
     required this.foto,
     required this.fotoUrl,
+    this.berat = 1000,
   });
 
   factory ProdukModel.fromJson(Map<String, dynamic> json) {
@@ -35,6 +37,7 @@ class ProdukModel {
       stok: pInt(json['stok']),
       foto: json['foto']?.toString() ?? '',
       fotoUrl: json['foto_url']?.toString() ?? '',
+      berat: pInt(json['berat'] ?? 1000),
     );
   }
 }

@@ -103,6 +103,7 @@ class _TransaksiScreenState extends State<TransaksiScreen> {
           harga: _selected!.harga,
           qty: qty,
           satuan: _selectedSatuan,
+          berat: _selected!.berat,
         ));
       });
     }
